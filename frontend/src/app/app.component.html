@@ -1,1 +1,12 @@
-<router-outlet></router-outlet>
+@if (authService.isAuthenticated()) {
+  <mat-toolbar color="primary">
+    <span>Loan Management</span>
+    <span class="spacer"></span>
+    <span class="username">{{ authService.username() }}</span>
+    <button mat-button (click)="authService.logout()">Logout</button>
+  </mat-toolbar>
+}
+
+<main>
+  <router-outlet></router-outlet>
+</main>
