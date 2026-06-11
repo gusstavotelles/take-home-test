@@ -31,6 +31,11 @@ public class GlobalExceptionMiddleware
             _logger.LogInformation(ex, "Resource not found for {Path}", context.Request.Path);
             await WriteAsync(context, StatusCodes.Status404NotFound, ex.Message);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized at {Path}", context.Request.Path);
+            await WriteAsync(context, StatusCodes.Status401Unauthorized, ex.Message);
+        }
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, "Invalid operation at {Path}", context.Request.Path);
