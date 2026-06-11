@@ -1,9 +1,12 @@
 <div class="auth-container">
   <mat-card>
-    <mat-card-header>
-      <mat-card-title>Login</mat-card-title>
-    </mat-card-header>
     <mat-card-content>
+      <div class="auth-header">
+        <mat-icon>lock_open</mat-icon>
+        <h2>Welcome back</h2>
+        <p>Sign in to manage your loans</p>
+      </div>
+
       <form [formGroup]="form" (ngSubmit)="onSubmit()">
         @if (errorMessage()) {
           <p class="error-message">{{ errorMessage() }}</p>
@@ -25,17 +28,17 @@
           }
         </mat-form-field>
 
-        <button mat-raised-button color="primary" type="submit" [disabled]="loading() || form.invalid">
+        <button mat-flat-button color="primary" class="submit-btn" type="submit" [disabled]="loading() || form.invalid">
           @if (loading()) {
             <mat-spinner diameter="20"></mat-spinner>
           } @else {
-            Login
+            Sign In
           }
         </button>
       </form>
 
       <p class="auth-link">
-        Don't have an account? <a routerLink="/register">Register</a>
+        Don't have an account? <a routerLink="/register">Create one</a>
       </p>
     </mat-card-content>
   </mat-card>

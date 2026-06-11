@@ -1,9 +1,13 @@
 @if (authService.isAuthenticated()) {
   <mat-toolbar color="primary">
-    <span>Loan Management</span>
+    <mat-icon>account_balance</mat-icon>
+    <span style="margin-left: 8px; font-weight: 500;">Loan Manager</span>
     <span class="spacer"></span>
     <span class="username">{{ authService.username() }}</span>
-    <button mat-button (click)="authService.logout()">Logout</button>
+    <button mat-button (click)="authService.logout()">
+      <mat-icon>logout</mat-icon>
+      Logout
+    </button>
   </mat-toolbar>
 }
 

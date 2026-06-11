@@ -1,27 +1,20 @@
-.dialog {
-  &__title {
-    margin: 0 0 16px;
-    font-size: 20px;
-    font-weight: 500;
-  }
+.dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 360px;
 
-  &__form {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    min-width: 320px;
+  @media (max-width: 480px) {
+    min-width: unset;
   }
+}
 
-  &__error {
-    margin: 0;
-    color: #b3261e;
-    font-size: 13px;
-  }
-
-  &__actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 12px;
-  }
+.dialog-error {
+  margin: 4px 0 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background-color: #fef2f2;
+  color: #dc2626;
+  font-size: 13px;
+  border: 1px solid #fecaca;
 }

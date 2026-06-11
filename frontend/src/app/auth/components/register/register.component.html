@@ -1,9 +1,12 @@
 <div class="auth-container">
   <mat-card>
-    <mat-card-header>
-      <mat-card-title>Register</mat-card-title>
-    </mat-card-header>
     <mat-card-content>
+      <div class="auth-header">
+        <mat-icon>person_add</mat-icon>
+        <h2>Create account</h2>
+        <p>Get started with loan management</p>
+      </div>
+
       <form [formGroup]="form" (ngSubmit)="onSubmit()">
         @if (errorMessage()) {
           <p class="error-message">{{ errorMessage() }}</p>
@@ -29,17 +32,17 @@
           }
         </mat-form-field>
 
-        <button mat-raised-button color="primary" type="submit" [disabled]="loading() || form.invalid">
+        <button mat-flat-button color="primary" class="submit-btn" type="submit" [disabled]="loading() || form.invalid">
           @if (loading()) {
             <mat-spinner diameter="20"></mat-spinner>
           } @else {
-            Register
+            Create Account
           }
         </button>
       </form>
 
       <p class="auth-link">
-        Already have an account? <a routerLink="/login">Login</a>
+        Already have an account? <a routerLink="/login">Sign in</a>
       </p>
     </mat-card-content>
   </mat-card>

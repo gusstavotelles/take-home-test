@@ -1,38 +1,42 @@
-<h2 class="dialog__title">New Loan</h2>
+<h2 mat-dialog-title>New Loan</h2>
 
-<form [formGroup]="form" (ngSubmit)="submit()" class="dialog__form">
-  <mat-form-field appearance="outline">
-    <mat-label>Applicant name</mat-label>
-    <input matInput formControlName="applicantName" maxlength="200" />
-    @if (form.controls.applicantName.touched && form.controls.applicantName.errors?.['required']) {
-      <mat-error>Applicant name is required.</mat-error>
+<mat-dialog-content>
+  <form [formGroup]="form" (ngSubmit)="submit()" class="dialog-form">
+    <mat-form-field appearance="outline">
+      <mat-label>Applicant name</mat-label>
+      <input matInput formControlName="applicantName" maxlength="200" />
+      @if (form.controls.applicantName.touched && form.controls.applicantName.errors?.['required']) {
+        <mat-error>Applicant name is required.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Amount</mat-label>
+      <span matTextPrefix>$&nbsp;</span>
+      <input matInput type="number" formControlName="amount" min="0.01" step="0.01" />
+      @if (form.controls.amount.touched && form.controls.amount.errors?.['min']) {
+        <mat-error>Amount must be greater than zero.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Current balance (optional)</mat-label>
+      <span matTextPrefix>$&nbsp;</span>
+      <input matInput type="number" formControlName="currentBalance" min="0" step="0.01" />
+      <mat-hint>Defaults to the loan amount.</mat-hint>
+    </mat-form-field>
+
+    @if (serverError(); as message) {
+      <p class="dialog-error" role="alert">{{ message }}</p>
     }
-  </mat-form-field>
+  </form>
+</mat-dialog-content>
 
-  <mat-form-field appearance="outline">
-    <mat-label>Amount</mat-label>
-    <input matInput type="number" formControlName="amount" min="0.01" step="0.01" />
-    @if (form.controls.amount.touched && form.controls.amount.errors?.['min']) {
-      <mat-error>Amount must be greater than zero.</mat-error>
-    }
-  </mat-form-field>
-
-  <mat-form-field appearance="outline">
-    <mat-label>Current balance (optional)</mat-label>
-    <input matInput type="number" formControlName="currentBalance" min="0" step="0.01" />
-    <mat-hint>Defaults to the loan amount.</mat-hint>
-  </mat-form-field>
-
-  @if (serverError(); as message) {
-    <p class="dialog__error" role="alert">{{ message }}</p>
-  }
-
-  <div class="dialog__actions">
-    <button type="button" mat-stroked-button (click)="cancel()" [disabled]="submitting()">
-      Cancel
-    </button>
-    <button type="submit" mat-flat-button color="primary" [disabled]="submitting()">
-      {{ submitting() ? 'Saving...' : 'Create' }}
-    </button>
-  </div>
-</form>
+<mat-dialog-actions align="end">
+  <button type="button" mat-button (click)="cancel()" [disabled]="submitting()">
+    Cancel
+  </button>
+  <button type="button" mat-flat-button color="primary" (click)="submit()" [disabled]="submitting()">
+    {{ submitting() ? 'Saving...' : 'Create' }}
+  </button>
+</mat-dialog-actions>
