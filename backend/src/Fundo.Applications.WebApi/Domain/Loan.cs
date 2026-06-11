@@ -7,6 +7,7 @@ public class Loan
     public decimal CurrentBalance { get; set; }
     public string ApplicantName { get; set; } = string.Empty;
     public string Status { get; set; } = LoanStatus.Active;
+    public Guid? OwnerId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

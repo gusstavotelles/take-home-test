@@ -1,7 +1,9 @@
+using System.Security.Claims;
 using FluentValidation;
 using Fundo.Applications.WebApi.DTOs;
 using Fundo.Applications.WebApi.Exceptions;
 using Fundo.Applications.WebApi.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Fundo.Applications.WebApi.Controllers;
@@ -9,6 +11,7 @@ namespace Fundo.Applications.WebApi.Controllers;
 [ApiController]
 [Route("loans")]
 [Produces("application/json")]
+[Authorize]
 public class LoansController : ControllerBase
 {
     private readonly ILoanService _loanService;
@@ -25,12 +28,18 @@ public class LoansController : ControllerBase
         _paymentValidator = paymentValidator;
     }
 
-    /// <summary>List all loans.</summary>
+    private Guid GetUserId() =>
+        Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue("sub")
+            ?? throw new UnauthorizedAccessException("User identity not found."));
+
+    /// <summary>List all loans for the current user.</summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<LoanResponse>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<LoanResponse>>> GetAll(CancellationToken cancellationToken)
     {
-        var loans = await _loanService.GetAllAsync(cancellationToken);
+        var userId = GetUserId();
+        var loans = await _loanService.GetAllAsync(userId, cancellationToken);
         return Ok(loans.Select(LoanResponse.FromDomain));
     }
 
@@ -40,7 +49,8 @@ public class LoansController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<LoanResponse>> GetById(Guid id, CancellationToken cancellationToken)
     {
-        var loan = await _loanService.GetByIdAsync(id, cancellationToken)
+        var userId = GetUserId();
+        var loan = await _loanService.GetByIdAsync(id, userId, cancellationToken)
             ?? throw new LoanNotFoundException(id);
 
         return Ok(LoanResponse.FromDomain(loan));
@@ -55,7 +65,8 @@ public class LoansController : ControllerBase
         CancellationToken cancellationToken)
     {
         await _createValidator.ValidateAndThrowAsync(request, cancellationToken);
-        var loan = await _loanService.CreateAsync(request, cancellationToken);
+        var userId = GetUserId();
+        var loan = await _loanService.CreateAsync(request, userId, cancellationToken);
         var response = LoanResponse.FromDomain(loan);
         return CreatedAtAction(nameof(GetById), new { id = loan.Id }, response);
     }
@@ -72,7 +83,8 @@ public class LoansController : ControllerBase
         CancellationToken cancellationToken)
     {
         await _paymentValidator.ValidateAndThrowAsync(request, cancellationToken);
-        var loan = await _loanService.ApplyPaymentAsync(id, request, cancellationToken);
+        var userId = GetUserId();
+        var loan = await _loanService.ApplyPaymentAsync(id, request, userId, cancellationToken);
         return Ok(LoanResponse.FromDomain(loan));
     }
 }

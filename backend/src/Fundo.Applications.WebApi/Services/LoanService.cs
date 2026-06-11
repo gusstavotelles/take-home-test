@@ -17,22 +17,23 @@ public class LoanService : ILoanService
         _logger = logger;
     }
 
-    public async Task<IReadOnlyList<Loan>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Loan>> GetAllAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return await _context.Loans
             .AsNoTracking()
+            .Where(l => l.OwnerId == userId)
             .OrderByDescending(l => l.CreatedAt)
             .ToListAsync(cancellationToken);
     }
 
-    public Task<Loan?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public Task<Loan?> GetByIdAsync(Guid id, Guid userId, CancellationToken cancellationToken = default)
     {
         return _context.Loans
             .AsNoTracking()
-            .FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(l => l.Id == id && l.OwnerId == userId, cancellationToken);
     }
 
-    public async Task<Loan> CreateAsync(CreateLoanRequest request, CancellationToken cancellationToken = default)
+    public async Task<Loan> CreateAsync(CreateLoanRequest request, Guid userId, CancellationToken cancellationToken = default)
     {
         var status = string.IsNullOrWhiteSpace(request.Status) ? LoanStatus.Active : request.Status;
         var balance = request.CurrentBalance ?? request.Amount;
@@ -43,6 +44,7 @@ public class LoanService : ILoanService
             CurrentBalance = balance,
             ApplicantName = request.ApplicantName.Trim(),
             Status = status,
+            OwnerId = userId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -55,13 +57,13 @@ public class LoanService : ILoanService
         _context.Loans.Add(loan);
         await _context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Created loan {LoanId} for {Applicant}", loan.Id, loan.ApplicantName);
+        _logger.LogInformation("Created loan {LoanId} for {Applicant} by user {UserId}", loan.Id, loan.ApplicantName, userId);
         return loan;
     }
 
-    public async Task<Loan> ApplyPaymentAsync(Guid id, PaymentRequest request, CancellationToken cancellationToken = default)
+    public async Task<Loan> ApplyPaymentAsync(Guid id, PaymentRequest request, Guid userId, CancellationToken cancellationToken = default)
     {
-        var loan = await _context.Loans.FirstOrDefaultAsync(l => l.Id == id, cancellationToken)
+        var loan = await _context.Loans.FirstOrDefaultAsync(l => l.Id == id && l.OwnerId == userId, cancellationToken)
             ?? throw new LoanNotFoundException(id);
 
         loan.ApplyPayment(request.Amount);
