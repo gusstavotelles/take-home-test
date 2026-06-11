@@ -18,7 +18,6 @@ obj/
 
 # Rider / VS Code
 .idea/
-.vscode/
 
 # Logs and temporary files
 *.log
@@ -57,7 +56,6 @@ pnpm-lock.yaml
 
 # IDEs and editors
 /.idea/
-/.vscode/
 /.editorconfig
 
 # Logs
