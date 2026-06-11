@@ -14,6 +14,7 @@ public class LoanServiceTests : IDisposable
 {
     private readonly LoanDbContext _context;
     private readonly LoanService _service;
+    private readonly Guid _userId = Guid.NewGuid();
 
     public LoanServiceTests()
     {
@@ -39,12 +40,13 @@ public class LoanServiceTests : IDisposable
             ApplicantName = " Maria Silva ",
         };
 
-        var loan = await _service.CreateAsync(request);
+        var loan = await _service.CreateAsync(request, _userId);
 
         loan.Id.Should().NotBeEmpty();
         loan.CurrentBalance.Should().Be(1_500m);
         loan.Status.Should().Be(LoanStatus.Active);
         loan.ApplicantName.Should().Be("Maria Silva");
+        loan.OwnerId.Should().Be(_userId);
 
         var stored = await _context.Loans.FindAsync(loan.Id);
         stored.Should().NotBeNull();
@@ -60,7 +62,7 @@ public class LoanServiceTests : IDisposable
             ApplicantName = "Closed Loan",
         };
 
-        var loan = await _service.CreateAsync(request);
+        var loan = await _service.CreateAsync(request, _userId);
 
         loan.Status.Should().Be(LoanStatus.Paid);
     }
@@ -70,7 +72,7 @@ public class LoanServiceTests : IDisposable
     {
         var loan = await SeedLoanAsync();
 
-        var result = await _service.GetByIdAsync(loan.Id);
+        var result = await _service.GetByIdAsync(loan.Id, _userId);
 
         result.Should().NotBeNull();
         result!.Id.Should().Be(loan.Id);
@@ -79,7 +81,7 @@ public class LoanServiceTests : IDisposable
     [Fact]
     public async Task GetByIdAsync_WhenMissing_ReturnsNull()
     {
-        var result = await _service.GetByIdAsync(Guid.NewGuid());
+        var result = await _service.GetByIdAsync(Guid.NewGuid(), _userId);
         result.Should().BeNull();
     }
 
@@ -89,7 +91,7 @@ public class LoanServiceTests : IDisposable
         await SeedLoanAsync(Guid.NewGuid(), createdAt: DateTime.UtcNow.AddMinutes(-10));
         await SeedLoanAsync(Guid.NewGuid(), createdAt: DateTime.UtcNow);
 
-        var result = await _service.GetAllAsync();
+        var result = await _service.GetAllAsync(_userId);
 
         result.Should().HaveCount(2);
         result[0].CreatedAt.Should().BeAfter(result[1].CreatedAt);
@@ -100,7 +102,7 @@ public class LoanServiceTests : IDisposable
     {
         var loan = await SeedLoanAsync(balance: 500m);
 
-        var updated = await _service.ApplyPaymentAsync(loan.Id, new PaymentRequest { Amount = 200m });
+        var updated = await _service.ApplyPaymentAsync(loan.Id, new PaymentRequest { Amount = 200m }, _userId);
 
         updated.CurrentBalance.Should().Be(300m);
     }
@@ -108,7 +110,7 @@ public class LoanServiceTests : IDisposable
     [Fact]
     public async Task ApplyPaymentAsync_WhenLoanMissing_Throws()
     {
-        var act = () => _service.ApplyPaymentAsync(Guid.NewGuid(), new PaymentRequest { Amount = 50m });
+        var act = () => _service.ApplyPaymentAsync(Guid.NewGuid(), new PaymentRequest { Amount = 50m }, _userId);
 
         await act.Should().ThrowAsync<LoanNotFoundException>();
     }
@@ -118,7 +120,7 @@ public class LoanServiceTests : IDisposable
     {
         var loan = await SeedLoanAsync(balance: 100m);
 
-        var act = () => _service.ApplyPaymentAsync(loan.Id, new PaymentRequest { Amount = 500m });
+        var act = () => _service.ApplyPaymentAsync(loan.Id, new PaymentRequest { Amount = 500m }, _userId);
 
         await act.Should().ThrowAsync<InvalidOperationException>();
     }
@@ -135,6 +137,7 @@ public class LoanServiceTests : IDisposable
             CurrentBalance = balance,
             ApplicantName = "Seed",
             Status = balance == 0 ? LoanStatus.Paid : LoanStatus.Active,
+            OwnerId = _userId,
             CreatedAt = createdAt ?? DateTime.UtcNow,
             UpdatedAt = createdAt ?? DateTime.UtcNow,
         };

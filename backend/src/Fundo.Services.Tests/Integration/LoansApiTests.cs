@@ -1,9 +1,11 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using FluentAssertions;
 using Fundo.Applications.WebApi;
 using Fundo.Applications.WebApi.Data;
 using Fundo.Applications.WebApi.DTOs;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -12,34 +14,50 @@ using Xunit;
 
 namespace Fundo.Services.Tests.Integration;
 
-public class LoansApiTests : IClassFixture<LoanApiFactory>
+public class LoansApiTests : IClassFixture<LoanApiFactory>, IAsyncLifetime
 {
     private readonly LoanApiFactory _factory;
+    private HttpClient _client = null!;
+    private string _token = string.Empty;
 
     public LoansApiTests(LoanApiFactory factory)
     {
         _factory = factory;
     }
 
-    [Fact]
-    public async Task GetAll_ReturnsSeedLoans()
+    public async Task InitializeAsync()
     {
-        var client = _factory.CreateClient();
+        _client = _factory.CreateClient();
 
-        var response = await client.GetAsync("/loans");
+        // Register a test user and get token
+        var registerResponse = await _client.PostAsJsonAsync("/auth/register", new RegisterRequest
+        {
+            Username = $"testuser-{Guid.NewGuid():N}",
+            Password = "TestPass123!"
+        });
+        registerResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var auth = await registerResponse.Content.ReadFromJsonAsync<AuthResponse>();
+        _token = auth!.Token;
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
+    [Fact]
+    public async Task GetAll_ReturnsEmptyForNewUser()
+    {
+        var response = await _client.GetAsync("/loans");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var loans = await response.Content.ReadFromJsonAsync<List<LoanResponse>>();
         loans.Should().NotBeNull();
-        loans!.Should().NotBeEmpty();
+        loans!.Should().BeEmpty();
     }
 
     [Fact]
     public async Task Post_CreateLoan_ReturnsCreated()
     {
-        var client = _factory.CreateClient();
-
-        var response = await client.PostAsJsonAsync("/loans", new CreateLoanRequest
+        var response = await _client.PostAsJsonAsync("/loans", new CreateLoanRequest
         {
             Amount = 2_500m,
             ApplicantName = "Integration Test",
@@ -56,9 +74,7 @@ public class LoansApiTests : IClassFixture<LoanApiFactory>
     [Fact]
     public async Task Post_CreateLoan_WithInvalidPayload_ReturnsBadRequest()
     {
-        var client = _factory.CreateClient();
-
-        var response = await client.PostAsJsonAsync("/loans", new CreateLoanRequest
+        var response = await _client.PostAsJsonAsync("/loans", new CreateLoanRequest
         {
             Amount = 0m,
             ApplicantName = "",
@@ -70,9 +86,7 @@ public class LoansApiTests : IClassFixture<LoanApiFactory>
     [Fact]
     public async Task Get_NonExistentLoan_ReturnsNotFound()
     {
-        var client = _factory.CreateClient();
-
-        var response = await client.GetAsync($"/loans/{Guid.NewGuid()}");
+        var response = await _client.GetAsync($"/loans/{Guid.NewGuid()}");
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -80,9 +94,7 @@ public class LoansApiTests : IClassFixture<LoanApiFactory>
     [Fact]
     public async Task Post_Payment_DeductsBalanceAndReturnsLoan()
     {
-        var client = _factory.CreateClient();
-
-        var create = await client.PostAsJsonAsync("/loans", new CreateLoanRequest
+        var create = await _client.PostAsJsonAsync("/loans", new CreateLoanRequest
         {
             Amount = 1_000m,
             ApplicantName = "Payer",
@@ -90,7 +102,7 @@ public class LoansApiTests : IClassFixture<LoanApiFactory>
         var created = await create.Content.ReadFromJsonAsync<LoanResponse>();
         created.Should().NotBeNull();
 
-        var paymentResponse = await client.PostAsJsonAsync(
+        var paymentResponse = await _client.PostAsJsonAsync(
             $"/loans/{created!.Id}/payment",
             new PaymentRequest { Amount = 400m });
 
@@ -103,16 +115,14 @@ public class LoansApiTests : IClassFixture<LoanApiFactory>
     [Fact]
     public async Task Post_Payment_WhenAmountExceedsBalance_ReturnsConflict()
     {
-        var client = _factory.CreateClient();
-
-        var create = await client.PostAsJsonAsync("/loans", new CreateLoanRequest
+        var create = await _client.PostAsJsonAsync("/loans", new CreateLoanRequest
         {
             Amount = 100m,
             ApplicantName = "Conflict",
         });
         var created = await create.Content.ReadFromJsonAsync<LoanResponse>();
 
-        var response = await client.PostAsJsonAsync(
+        var response = await _client.PostAsJsonAsync(
             $"/loans/{created!.Id}/payment",
             new PaymentRequest { Amount = 500m });
 
@@ -122,13 +132,21 @@ public class LoansApiTests : IClassFixture<LoanApiFactory>
     [Fact]
     public async Task Post_Payment_WhenLoanMissing_ReturnsNotFound()
     {
-        var client = _factory.CreateClient();
-
-        var response = await client.PostAsJsonAsync(
+        var response = await _client.PostAsJsonAsync(
             $"/loans/{Guid.NewGuid()}/payment",
             new PaymentRequest { Amount = 50m });
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetAll_Unauthorized_ReturnsUnauthorized()
+    {
+        var unauthClient = _factory.CreateClient();
+
+        var response = await unauthClient.GetAsync("/loans");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }
 
@@ -140,6 +158,10 @@ public class LoanApiFactory : WebApplicationFactory<Program>
     {
         builder.UseSetting("UseInMemoryDatabase", "true");
         builder.UseSetting("ConnectionStrings:LoanDb", string.Empty);
+        builder.UseSetting("Jwt:Key", "IntegrationTestKey-MustBeAtLeast32CharactersLong!");
+        builder.UseSetting("Jwt:Issuer", "LoanApi");
+        builder.UseSetting("Jwt:Audience", "LoanApp");
+        builder.UseSetting("Jwt:ExpiresInHours", "1");
         builder.UseEnvironment("Development");
 
         builder.ConfigureServices(services =>
