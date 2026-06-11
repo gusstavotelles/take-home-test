@@ -1,0 +1,27 @@
+.dialog {
+  &__title {
+    margin: 0 0 16px;
+    font-size: 20px;
+    font-weight: 500;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 320px;
+  }
+
+  &__error {
+    margin: 0;
+    color: #b3261e;
+    font-size: 13px;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+  }
+}
