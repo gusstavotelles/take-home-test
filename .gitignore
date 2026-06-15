@@ -18,7 +18,6 @@ obj/
 
 # Rider / VS Code
 .idea/
-.vscode/
 
 # Logs and temporary files
 *.log
@@ -44,9 +43,6 @@ project.assets.json
 *.pfx
 *.p12
 
-# Entity Framework Migrations
-migrations/
-
 # --- ANGULAR / TypeScript ---
 node_modules/
 dist/
@@ -60,7 +56,6 @@ pnpm-lock.yaml
 
 # IDEs and editors
 /.idea/
-/.vscode/
 /.editorconfig
 
 # Logs

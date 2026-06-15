@@ -1,0 +1,45 @@
+<div class="auth-container">
+  <mat-card>
+    <mat-card-content>
+      <div class="auth-header">
+        <mat-icon>lock_open</mat-icon>
+        <h2>Welcome back</h2>
+        <p>Sign in to manage your loans</p>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        @if (errorMessage()) {
+          <p class="error-message">{{ errorMessage() }}</p>
+        }
+
+        <mat-form-field appearance="outline">
+          <mat-label>Username</mat-label>
+          <input matInput formControlName="username" autocomplete="username" />
+          @if (form.controls.username.hasError('required')) {
+            <mat-error>Username is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Password</mat-label>
+          <input matInput type="password" formControlName="password" autocomplete="current-password" />
+          @if (form.controls.password.hasError('required')) {
+            <mat-error>Password is required</mat-error>
+          }
+        </mat-form-field>
+
+        <button mat-flat-button color="primary" class="submit-btn" type="submit" [disabled]="loading() || form.invalid">
+          @if (loading()) {
+            <mat-spinner diameter="20"></mat-spinner>
+          } @else {
+            Sign In
+          }
+        </button>
+      </form>
+
+      <p class="auth-link">
+        Don't have an account? <a routerLink="/register">Create one</a>
+      </p>
+    </mat-card-content>
+  </mat-card>
+</div>

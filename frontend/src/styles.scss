@@ -1,4 +1,22 @@
-/* You can add global styles to this file, and also import other style files */
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+$loan-theme: mat.define-theme(
+  (
+    color: (
+      theme-type: light,
+      primary: mat.$blue-palette,
+    ),
+    density: (
+      scale: 0,
+    ),
+  )
+);
+
+html {
+  @include mat.all-component-themes($loan-theme);
+}
 
 html,
 body {
@@ -7,5 +25,25 @@ body {
 
 body {
   margin: 0;
-  font-family: "Roboto", sans-serif;
+  font-family: 'Inter', 'Roboto', sans-serif;
+  background-color: #f8fafc;
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// --- Global dialog styling ---
+.mat-mdc-dialog-container .mdc-dialog__surface {
+  border-radius: 16px !important;
+}
+
+// --- Snackbar styling ---
+.snackbar-error {
+  --mdc-snackbar-container-color: #dc2626;
+  --mdc-snackbar-supporting-text-color: #fff;
+}
+
+.snackbar-warn {
+  --mdc-snackbar-container-color: #ea580c;
+  --mdc-snackbar-supporting-text-color: #fff;
 }
